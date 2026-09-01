@@ -1,0 +1,43 @@
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
+
+// Vitest 設定。unit-test-instructions.md 準拠:
+// jsdom 環境、RTL + MSW の setupFiles、@vitest/coverage-v8 で line 80% floor、
+// non-testable boilerplate（main.tsx / vite.config.* / *.d.ts / src/**/index.ts）を除外。
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    css: false,
+    // テスト時の VITE_* は placeholder（真の機密ではない構成値）。
+    env: {
+      VITE_API_BASE_URL: "https://api.test.invalid",
+      VITE_COGNITO_USER_POOL_ID: "ap-northeast-1_testpool",
+      VITE_COGNITO_CLIENT_ID: "testclientid0000000000",
+      VITE_COGNITO_REGION: "ap-northeast-1",
+    },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "text-summary", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: [
+        "src/main.tsx",
+        "src/**/*.d.ts",
+        "src/**/index.ts",
+        "src/test/**",
+        "src/**/*.test.{ts,tsx}",
+      ],
+      thresholds: {
+        lines: 80,
+      },
+    },
+  },
+});

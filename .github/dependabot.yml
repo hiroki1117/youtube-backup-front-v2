@@ -1,0 +1,21 @@
+version: 2
+# NFR5.1: 依存自動更新を週次で有効化（依存陳腐化の再発防止）。
+updates:
+  - package-ecosystem: npm # pnpm-lock.yaml を対象（Dependabot は pnpm ロックに対応）
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # マイナー/パッチはまとめて PR 化しレビュー負荷を下げる
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
