@@ -82,7 +82,7 @@ export function makeSubmitEnvelope(
       title: overrides.title ?? "新規登録動画",
       already_backup: alreadyBackup,
       batch_job_id: overrides.batch_job_id ?? "job-new1",
-      s3: "s3://youtubedl-bucket/new1.mp4",
+      s3: "s3://example-bucket/new1.mp4",
     },
   };
 }
@@ -152,7 +152,7 @@ export interface PresignedEnvelope {
 
 /** テスト用の署名 URL（https。download.ts の https 検証・<video src> の再生ソースに使う）。 */
 export const TEST_PRESIGNED_URL =
-  "https://s3.ap-northeast-1.amazonaws.com/youtubedl-bucket/v1.mp4?sig=test";
+  "https://s3.ap-northeast-1.amazonaws.com/example-bucket/v1.mp4?sig=test";
 
 /**
  * GET /presigned-s3url の成功エンベロープを生成する（U6 再生/DL テスト用）。

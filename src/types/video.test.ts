@@ -12,7 +12,7 @@ describe("parseVideo（VideoModel / contract C3）", () => {
       platform: "youtube",
       title: "サンプル動画",
       backupDate: "2026-08-01",
-      s3FullPath: "s3://youtubedl-bucket/v1.mp4",
+      s3FullPath: "s3://example-bucket/v1.mp4",
       uploadStatus: "complete",
       requestTimestamp: "1690000000",
     });
