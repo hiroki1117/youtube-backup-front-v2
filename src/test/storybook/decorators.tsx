@@ -62,9 +62,19 @@ function FreshQueryClientProvider({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
-/** `parameters.auth` から生成した AuthApi スタブを AuthProvider に注入する。 */
+/**
+ * `parameters.auth` から生成した AuthApi スタブを AuthProvider に注入する。
+ * `resolveAuthOptions` は文字列形式の `parameters.auth` を render ごとに新しいオブジェクトへ変換するため、
+ * オブジェクト参照ではなく値（`status` と `signInResult`）で memo 化し、`AuthProvider` の
+ * `useCallback` → `useEffect` が余分に発火して `getSession()` が再呼び出しされるのを防ぐ（レビュー R-02）。
+ * `signInResult` は Story の `parameters` に定義された参照が安定しているため依存に含めてよい。
+ */
 function StubAuthProvider({ auth, children }: { auth: StubAuthApiOptions; children: ReactNode }) {
-  const authApi = useMemo(() => createStubAuthApi(auth), [auth]);
+  const { status, signInResult } = auth;
+  const authApi = useMemo(
+    () => createStubAuthApi({ status, signInResult }),
+    [status, signInResult],
+  );
   return <AuthProvider authApi={authApi}>{children}</AuthProvider>;
 }
 
