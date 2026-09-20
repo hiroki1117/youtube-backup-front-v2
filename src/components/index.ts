@@ -12,6 +12,8 @@ export { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 export type { DeleteConfirmDialogProps } from "./DeleteConfirmDialog";
 export { SearchDialog } from "./SearchDialog";
 export type { SearchDialogProps } from "./SearchDialog";
+export { VideoDetail } from "./VideoDetail";
+export type { VideoDetailProps } from "./VideoDetail";
 export { ThemeToggle } from "./ThemeToggle";
 export { Toaster } from "./Toaster";
 export { Button, buttonVariants } from "./ui/button";
