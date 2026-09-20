@@ -11,7 +11,10 @@ import prettier from "eslint-config-prettier";
 // + eslint-plugin-import（import/no-cycle でレイヤ逆流を機械的に禁止）
 // + eslint-config-prettier（最後に適用して Formatter 競合を解消）。
 export default tseslint.config(
-  { ignores: ["dist", "coverage", "node_modules", "infra"] },
+  // storybook-static は build-storybook の生成物、.storybook/public は msw init が生成した worker スクリプト。
+  {
+    ignores: ["dist", "coverage", "node_modules", "infra", "storybook-static", ".storybook/public"],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -56,9 +59,15 @@ export default tseslint.config(
       "import/no-cycle": ["error", { maxDepth: 10 }],
     },
   },
-  // 設定ファイル・テストファイルは Node グローバルを許可
+  // 設定ファイル・テストファイル・Storybook 設定は Node グローバルを許可
   {
-    files: ["*.config.ts", "*.config.js", "src/test/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+    files: [
+      "*.config.ts",
+      "*.config.js",
+      "src/test/**/*.{ts,tsx}",
+      "**/*.test.{ts,tsx}",
+      ".storybook/**/*.{ts,tsx}",
+    ],
     languageOptions: {
       globals: {
         ...globals.node,

@@ -1,5 +1,5 @@
 export { AuthProvider, useAuth } from "./useAuth";
-export type { AuthState } from "./useAuth";
+export type { AuthState, AuthProviderProps } from "./useAuth";
 export { ThemeProvider, useTheme } from "./useTheme";
 export type { Theme } from "./useTheme";
 export {

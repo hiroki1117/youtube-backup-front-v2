@@ -16,6 +16,7 @@ vi.mock("@/api/auth", () => ({
   },
 }));
 
+import type { AuthApi } from "@/api/auth";
 import { AuthProvider, useAuth } from "./useAuth";
 
 function Probe() {
@@ -81,5 +82,47 @@ describe("AuthProvider / useAuth（SM1）", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(() => render(<Probe />)).toThrow(/AuthProvider/);
     spy.mockRestore();
+  });
+
+  describe("authApi 注入（R-01 依存注入 / Storybook スタブ経路）", () => {
+    it("authApi を注入すると既定 authModule は呼ばれず、注入スタブの getSession 結果が status に反映される", async () => {
+      const stub: AuthApi = {
+        getSession: vi.fn().mockResolvedValue("authenticated"),
+        signIn: vi.fn().mockResolvedValue({ kind: "ok" }),
+        signOut: vi.fn().mockResolvedValue(undefined),
+      };
+      render(
+        <AuthProvider authApi={stub}>
+          <Probe />
+        </AuthProvider>,
+      );
+
+      expect(await screen.findByText("authenticated")).toBeInTheDocument();
+      expect(stub.getSession).toHaveBeenCalledTimes(1);
+      expect(getSessionMock).not.toHaveBeenCalled();
+    });
+
+    it("注入スタブの signIn が invalidCredentials を返すとき status は unauthenticated のまま", async () => {
+      const user = userEvent.setup();
+      const stub: AuthApi = {
+        getSession: vi.fn().mockResolvedValue("unauthenticated"),
+        signIn: vi
+          .fn()
+          .mockResolvedValue({ kind: "invalidCredentials", message: "認証情報が正しくありません" }),
+        signOut: vi.fn().mockResolvedValue(undefined),
+      };
+      render(
+        <AuthProvider authApi={stub}>
+          <Probe />
+        </AuthProvider>,
+      );
+      await screen.findByText("unauthenticated");
+
+      await user.click(screen.getByRole("button", { name: "in" }));
+
+      expect(stub.signIn).toHaveBeenCalledWith("u", "p");
+      expect(screen.getByTestId("status")).toHaveTextContent("unauthenticated");
+      expect(signInMock).not.toHaveBeenCalled();
+    });
   });
 });
