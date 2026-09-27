@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatusView, type ViewState } from "@/components/StatusView";
+import { VideoDetail } from "@/components/VideoDetail";
 import { useVideoDownload } from "@/hooks/useVideoDownload";
 import { useVideoPlayback, type PlaybackSource } from "@/hooks/useVideoPlayback";
 import { ROUTES } from "@/lib/routes";
-import type { UploadStatus, Video } from "@/types/video";
 
 /**
  * 動画再生ページ（U6 video-playback / US6.1・US6.2・FR6・FR7・OQ2・A3）。
@@ -16,30 +16,9 @@ import type { UploadStatus, Video } from "@/types/video";
  *
  * 制御フローは discriminated union（PlaybackState / ViewState）で表現し、表示テキストで分岐しない。
  * アクセシビリティ: 表示時に見出しへフォーカスし、role/aria を付与する。
- * レイヤ境界: app 層。取得・DL ロジックは hooks（useVideoPlayback / useVideoDownload）へ委譲する。
+ * レイヤ境界: app 層。取得・DL ロジックは hooks（useVideoPlayback / useVideoDownload）へ委譲し、
+ * 詳細表示は components（VideoDetail）へ委譲する。
  */
-
-// upload_status enum → 表示ラベル。制御フローは enum で分岐し、ラベルでは分岐しない。
-const STATUS_LABEL: Record<UploadStatus, string> = {
-  init: "処理中",
-  complete: "完了",
-};
-
-/** 動画の詳細（title/platform/backupDate/状態）を表示する（presentational）。 */
-function VideoDetail({ video }: { video: Video }) {
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm" data-testid="playback-detail">
-      <dt className="text-muted-foreground">タイトル</dt>
-      <dd className="font-medium">{video.title}</dd>
-      <dt className="text-muted-foreground">プラットフォーム</dt>
-      <dd>{video.platform}</dd>
-      <dt className="text-muted-foreground">バックアップ日</dt>
-      <dd>{video.backupDate}</dd>
-      <dt className="text-muted-foreground">状態</dt>
-      <dd>{STATUS_LABEL[video.uploadStatus]}</dd>
-    </dl>
-  );
-}
 
 /** 署名 URL の取得状態（PlaybackSource）を StatusView の ViewState へ変換する。 */
 function toSourceViewState(source: PlaybackSource): ViewState<string> {

@@ -5,6 +5,8 @@ import { fileURLToPath, URL } from "node:url";
 // Vitest 設定。unit-test-instructions.md 準拠:
 // jsdom 環境、RTL + MSW の setupFiles、@vitest/coverage-v8 で line 80% floor、
 // non-testable boilerplate（main.tsx / vite.config.* / *.d.ts / src/**/index.ts）を除外。
+// Story（src/**/*.stories.{ts,tsx}）は Vitest で実行されないため coverage の分母から除外する
+// （floor の緩和ではなく測定範囲の正常化）。Storybook 専用ヘルパは src/test/** に置き既存除外で分母外。
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -34,6 +36,7 @@ export default defineConfig({
         "src/**/index.ts",
         "src/test/**",
         "src/**/*.test.{ts,tsx}",
+        "src/**/*.stories.{ts,tsx}",
       ],
       thresholds: {
         lines: 80,
