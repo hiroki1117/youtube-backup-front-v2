@@ -32,9 +32,18 @@ export function AuthProvider({ children, authApi = authModule }: AuthProviderPro
     setStatus(next);
   }, [authApi]);
 
+  // 起動時のセッション復元。setState は非同期コールバック内で行い、アンマウント後の更新は捨てる。
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+    void authApi.getSession().then((next) => {
+      if (!cancelled) {
+        setStatus(next);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authApi]);
 
   const signIn = useCallback(
     async (username: string, password: string): Promise<AuthResult> => {
