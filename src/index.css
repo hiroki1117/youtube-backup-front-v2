@@ -1,6 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* テーマ切替は <html data-theme="dark"> で行う（functional-spec WF5 / FR10）。 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* shadcn/ui トークンを Tailwind のテーマへ公開する。inline で var() を利用箇所に展開し、
+   data-theme 切替に追従させる（旧 tailwind.config.js の theme.extend 相当）。 */
+@theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
 
 /* shadcn/ui デザイントークン。テーマは <html data-theme="..."> で切替（WF5 / FR10）。
    data-theme 未設定時は light を既定とする。 */
@@ -41,21 +71,35 @@
   --ring: 212.7 26.8% 83.9%;
 }
 
-* {
-  border-color: hsl(var(--border));
-}
+/* v4 は utilities を cascade layer に置くため、base 相当の要素スタイルも @layer base に入れて
+   border-* / bg-* などのユーティリティで上書きできる状態（v3 と同じ優先順位）を保つ。 */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: hsl(var(--border));
+  }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Hiragino Sans",
-    "Noto Sans JP",
-    sans-serif;
+  /* v4 で button の既定カーソルが default になったため v3 の pointer を維持する。 */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family:
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      "Hiragino Sans",
+      "Noto Sans JP",
+      sans-serif;
+  }
 }

@@ -63,7 +63,7 @@ export function LoginPage() {
       <form
         onSubmit={onSubmit}
         aria-label="ログインフォーム"
-        className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-6 shadow-xs"
       >
         <h1 className="text-center text-xl font-semibold">youtube-backup にログイン</h1>
         {error !== null ? (

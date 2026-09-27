@@ -61,7 +61,7 @@ export function VideoPlaybackPage() {
       <h2
         ref={headingRef}
         tabIndex={-1}
-        className="text-xl font-semibold outline-none"
+        className="text-xl font-semibold outline-hidden"
         data-testid="playback-heading"
       >
         {headingText}

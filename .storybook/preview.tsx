@@ -17,7 +17,7 @@ import "../src/index.css";
 const THEME_STORAGE_KEY = "theme";
 
 /**
- * テーマ切替デコレータ（US-4）。`tailwind.config.js` は `darkMode: ["selector", '[data-theme="dark"]']`
+ * テーマ切替デコレータ（US-4）。`src/index.css` の `@custom-variant dark` は `[data-theme="dark"]` セレクタ
  * のため class トグルでは効かず、`<html data-theme>` 属性の切替が必須。
  * `ThemeProvider` は初期化時に localStorage を読み、自身の effect で `data-theme` を上書きするので、
  * localStorage も同期しつつ `key` で Story を再マウントし、Provider 付き Story にも切替を反映する。
