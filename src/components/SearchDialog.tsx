@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { generatePath, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,11 +58,14 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
   const navigate = useNavigate();
 
   // 閉じたら入力を初期化し、次回オープン時にクリーンな状態にする。
-  useEffect(() => {
+  // effect 内 setState を避け、prop 変化時にレンダー中で state を調整する（React 推奨パターン）。
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setQuery("");
     }
-  }, [open]);
+  }
 
   if (!open) {
     return null;
