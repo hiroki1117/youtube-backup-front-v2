@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,12 +28,15 @@ export function RegisterDialog({ open, onClose }: RegisterDialogProps) {
   const { submit, isSubmitting } = useVideoRegistration({ onRegistered: onClose });
 
   // 閉じたら入力とエラーを初期化し、次回オープン時にクリーンな状態にする。
-  useEffect(() => {
+  // effect 内 setState を避け、prop 変化時にレンダー中で state を調整する（React 推奨パターン）。
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) {
       setUrl("");
       setValidationError(null);
     }
-  }, [open]);
+  }
 
   if (!open) {
     return null;
