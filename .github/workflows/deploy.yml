@@ -46,7 +46,7 @@ jobs:
           VITE_COGNITO_REGION: ${{ vars.VITE_COGNITO_REGION }}
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           # IAM trust policy 側で sub を repo:<org>/<repo>:ref:refs/heads/main に絞ること（least privilege）
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
