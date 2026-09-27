@@ -102,10 +102,15 @@ export class HttpApiClient implements ApiClient {
   /** 単一 fetch ラッパ。ネットワーク/パース失敗は transport 失敗値に変換し、例外を投げない。 */
   private async request(path: string, init?: RequestInit): Promise<RawFetch> {
     try {
+      // ボディを持たない GET/DELETE には Content-Type を付けない。
+      // application/json は CORS の単純リクエスト対象外で preflight（OPTIONS）が発生し、
+      // /presigned-s3url は OPTIONS 未定義のため preflight で失敗する。
+      const hasBody = init?.body !== undefined && init?.body !== null;
+      const baseHeaders: HeadersInit = hasBody ? { "Content-Type": "application/json" } : {};
       const response = await fetch(`${this.baseUrl}${path}`, {
         ...init,
         headers: {
-          "Content-Type": "application/json",
+          ...baseHeaders,
           ...(init?.headers ?? {}),
         },
         // 認証ヘッダは付与しない（C1/C2）

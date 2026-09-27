@@ -240,3 +240,49 @@ describe("ApiClient.getPresignedUrl（PresignedEnvelope）", () => {
     expect(result.kind).toBe("notFound");
   });
 });
+
+describe("ApiClient.request のヘッダ制御（CORS preflight 回避）", () => {
+  it("ボディを持たない GET /presigned-s3url には Content-Type を付けない（単純リクエスト）", async () => {
+    let contentType: string | null = "unset";
+    server.use(
+      http.get(`${TEST_API_BASE}/presigned-s3url`, ({ request }) => {
+        contentType = request.headers.get("content-type");
+        return HttpResponse.json({
+          result: "succ",
+          description: "ok",
+          presigned_s3url: "https://s3.example.com/signed",
+        });
+      }),
+    );
+    await client.getPresignedUrl("v1");
+    expect(contentType).toBeNull();
+  });
+
+  it("ボディを持たない DELETE /video/{id} には Content-Type を付けない", async () => {
+    let contentType: string | null = "unset";
+    server.use(
+      http.delete(`${TEST_API_BASE}/video/:id`, ({ request }) => {
+        contentType = request.headers.get("content-type");
+        return HttpResponse.json({
+          result: "succ",
+          description: "deleted",
+          video_data: makeRawVideo(),
+        });
+      }),
+    );
+    await client.deleteVideo("v1");
+    expect(contentType).toBeNull();
+  });
+
+  it("ボディを持つ POST /video には Content-Type: application/json を付ける", async () => {
+    let contentType: string | null = null;
+    server.use(
+      http.post(`${TEST_API_BASE}/video`, ({ request }) => {
+        contentType = request.headers.get("content-type");
+        return HttpResponse.json({ result: "error", description: "URLの異常", video_data: null });
+      }),
+    );
+    await client.submitVideo("bad");
+    expect(contentType).toBe("application/json");
+  });
+});
