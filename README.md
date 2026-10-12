@@ -7,7 +7,7 @@ frontend・backend（Lambda）・batch を1つの repo で変更・検証し、�
 | 配置                               | 役割と現在の配布元                                                                                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | [frontend/](frontend/)             | Vite / React / TypeScript アプリ。既存の [deploy.yml](.github/workflows/deploy.yml) が S3 / CloudFront へ配布 |
-| [backend/lambda/](backend/lambda/) | 旧 `youtube-backup` の Lambda ソースを保全。本番と未照合、配布は旧管理のまま                                  |
+| [backend/lambda/](backend/lambda/) | FastAPI 実装候補と旧ソース保全。詳細は [backend/README.md](backend/README.md)。本番未切替                     |
 | [batch/scripts/](batch/scripts/)   | download / upload / whisper / 保守スクリプトを保全。image push は旧 `youtube-backup` の CI が継続             |
 | [infra/](infra/)                   | 既存 CDK scaffold。実所有の確認前に適用・削除しない                                                           |
 
@@ -19,11 +19,11 @@ app は source と成果物作成、infra は AWS 設定と成果物参照を担
 ## セットアップと起動
 
 Node / pnpm の要件・固定版と全コマンドは [frontend/package.json](frontend/package.json)、検証する Node は [CI](.github/workflows/ci.yml) を参照。
-Python 3、Make、shell も使用する。Docker は batch image のローカル build に必要。
+backend の Python 要件・セットアップは [backend/README.md](backend/README.md) を参照。Make、shell も使用する。Docker は batch image のローカル build に必要。
 pnpm を用意した後、repo 直下で実行する（専用モノレポ framework は使用しない）。
 
 ```bash
-make install
+make install # frontend + backend（Python要件を先に満たす）
 cp frontend/.env.example frontend/.env # 公開構成値を設定
 pnpm --dir frontend dev
 ```
@@ -37,7 +37,7 @@ pnpm --dir frontend dev
 repo 全体の検証と frontend の成果物作成:
 
 ```bash
-make check # frontend 型・lint・format・coverage、backend/batch 構文
+make check # frontend 品質検査、backend pytest/Ruff、batch 構文
 make build # frontend と Storybook
 ```
 
@@ -48,12 +48,12 @@ pnpm --dir frontend typecheck
 pnpm --dir frontend test
 pnpm --dir frontend build
 make -C backend check
-make -C backend package # ソースのみの候補 ZIP。依存未同梱・本番配布禁止
+make -C backend package FUNCTION=video # 検証用 ZIP。本番配布なし
 make -C batch check
 make -C batch build IMAGE=yt-dlp-script TAG=youtube-backup-candidate:local
 ```
 
-frontend の既存テスト・型・lint・format、Vite / Storybook build、backend / batch の構文と候補 ZIP は確認済み。
+frontend の既存テスト・型・lint・format、Vite / Storybook build、新 backend の pytest・Ruff・ローカルHTTP・依存同梱ZIPと handler import、batch の構文を確認。
 batch image build と AWS 上の機能検証は未完了。詳細な検証結果と環境制約は [migration.md](docs/migration.md)。
 frontend の機能・画面は [src/app/](frontend/src/app/)、API境界は [src/api/](frontend/src/api/)、ドメイン型は [src/types/](frontend/src/types/) が入口。
 レイヤは `components → hooks → api → types`。Storybook は `pnpm --dir frontend storybook`、設定は [.storybook/](frontend/.storybook/)。
@@ -68,3 +68,5 @@ backend / batch の新しい本番 workflow は追加していない。旧 CI �
 Lambda live source / runtime / layer の照合、配布所有者・旧CI切替、CDK所有、改名時の OIDC / 外部連携整合が残る。
 repo 改名・PR / merge・deploy・AWS / state / IAM / secret 変更・既存CI停止/起動は今回実施していない。
 Lambdalith 化、runtime / 依存更新、image digest 固定化は別段階。
+
+公開前提: 現在ツリーの実環境参照は環境変数化したが、旧Git履歴に固定resource名・認証主体名等が残る。公開安全性の履歴レビュー・承認された対処が必要。新APIの詳細・未移植機能は backend README を参照。

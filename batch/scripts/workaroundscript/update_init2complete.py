@@ -1,3 +1,4 @@
+import os
 # バックアップが成功しているけどupload_statusがinitで止まっているデータをcompleteにアップデートする
 
 import boto3
@@ -6,7 +7,7 @@ from boto3.dynamodb.conditions import Attr
 from urllib.parse import urlparse
 
 s3 = boto3.client("s3")
-table = boto3.resource("dynamodb").Table("YoutubeBackup")
+table = boto3.resource("dynamodb").Table(os.environ["DYNAMO_TABLE_NAME"])
 
 def main():    
     options = {
@@ -25,7 +26,7 @@ def main():
         s3path = item["s3fullpath"]
         path = urlparse(s3path).path[1:]
         print(path)
-        if checks3exists("youtubedl-bucket", path):
+        if checks3exists(os.environ["BACKUP_S3_PREFIX"], path):
             exsitslist.append(item)
             update_video_upload_status(item["video_id"])
         else:

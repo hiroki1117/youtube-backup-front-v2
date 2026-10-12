@@ -16,15 +16,18 @@
     },
     "backend/lambda/retry-submit-job-lambda/main.py": {
       "source": "lambda/retry-submit-job-lambda/main.py",
-      "sha256": "94933633aabdfe287efc615f6c177612a014359f5514613c51efdcbe5d5e4a8e"
+      "sha256": "94933633aabdfe287efc615f6c177612a014359f5514613c51efdcbe5d5e4a8e",
+      "current_sha256": "56d8974093ae2b9005de7bd9076a52245fbe7c8b22e3f6f52f70f82e446fb8ae"
     },
     "backend/lambda/scrapbox-backup-lambda/main.py": {
       "source": "lambda/scrapbox-backup-lambda/main.py",
-      "sha256": "726fb0e976729caa7822d84498d778cc8f044fa7ad5eae9f85082b6f36f6e362"
+      "sha256": "726fb0e976729caa7822d84498d778cc8f044fa7ad5eae9f85082b6f36f6e362",
+      "current_sha256": "02cc615090e74e377e94115898822a61929ef46522f1f72b911920e680d293d4"
     },
     "backend/lambda/submit-job-lambda/main.py": {
       "source": "lambda/submit-job-lambda/main.py",
-      "sha256": "397948af40a78453f9ea5aec909f0fed5705d90cd5493651de59c51fdba99029"
+      "sha256": "397948af40a78453f9ea5aec909f0fed5705d90cd5493651de59c51fdba99029",
+      "current_sha256": "c61a1f44c6cd2b3cb39cbdbb0e3a9ce0a00ee877b43a358c19c718216a292037"
     },
     "backend/lambda/update-video-lambda/main.py": {
       "source": "lambda/update-video-lambda/main.py",
@@ -48,7 +51,8 @@
     },
     "batch/scripts/workaroundscript/update_init2complete.py": {
       "source": "script/workaroundscript/update_init2complete.py",
-      "sha256": "c549d4a8af67482c77cb14e8f53b33fb3d8e2e68697891986509079a303fb809"
+      "sha256": "c549d4a8af67482c77cb14e8f53b33fb3d8e2e68697891986509079a303fb809",
+      "current_sha256": "d820f9788325824439704d601fc7694f15a742c360ae513d0a5c24a8075ac770"
     },
     "batch/scripts/youtube-dl-script/Dockerfile": {
       "source": "script/youtube-dl-script/Dockerfile",
@@ -86,5 +90,6 @@
       "source": "script/yt-dlp-script/main.sh",
       "sha256": "7be0e91e379805d8645352a5ce0a633e827364683e61b25cb984cbd31502c8ca"
     }
-  }
+  },
+  "note": "sha256 records the original import. Files sanitized for public source have current_sha256; original runtime parity is not claimed."
 }

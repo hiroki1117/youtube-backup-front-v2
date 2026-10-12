@@ -3,7 +3,7 @@
 ## 現在の根拠
 
 - frontend 移動元: `youtube-backup-front-v2@721ed65a95f97320b1eff7142a23f4d7bdf64801`。
-- backend / batch 移管元: [source-manifest.json](source-manifest.json) の `youtube-backup` commit。内容は変更せずコピーし、LICENSE を各部分へ同梱した。新しい配布元として有効化していない。
+- backend / batch 移管元: [source-manifest.json](source-manifest.json) の `youtube-backup` commit。移管時は内容を変更せずコピーし、LICENSE を各部分へ同梱した。公開安全性のため、その後の変更で保守scriptの固定table名を環境変数へ置換した。新しい配布元として有効化していない。
 - `youtube_backup2@ba09a86` は storage / IAM 等の Terraform、旧 front `ef24fa6` は CRA。名称の似た repo をアプリ正本と扱わない。
 - 依頼時の運用情報: infra `youtube-backup/prod` へ基盤48件の state 統合済み。旧 Lambda9 / API / 通知は旧管理のまま稼働維持。本作業で AWS/state の再監査はしていない。
 - infra の取得済み main `e89f75c` にある [監査資料](https://github.com/hiroki1117/infra/blob/e89f75c/docs/youtube-backup-ownership.md) は以前の段階の記録。state と live hash の差は submit/retry/scrapbox の3件、他6件は state hash のみ一致。これは旧 source と live の一致を証明しない。最新運用情報を過去資料で上書きしない。
@@ -50,7 +50,7 @@ CDK は stack/resource/state と infra 定義の対応を確認後に移管ま�
 - Vite / Storybook build が成功。既存の bundle size warning あり。
 - Lambda9件と batch Python の AST、download / whisper の sh 構文、upload の bash 構文が成功。Lambda 候補 ZIP9件の内容も source と一致。
 - 旧ソースの末尾空白も内容保全のため維持。移管ファイル以外の `git diff --check` は成功。
-- 移管元 commit / SHA256、frontend source と lockfile の無変更、workflow YAML・参照パス、既存 trigger / deploy 設定の保持を確認。
+- 移管元 commit / SHA256、初期整備時の frontend source と lockfile の無変更、workflow YAML・参照パス、既存 trigger / deploy 設定の保持を確認。
 - yt-dlp Docker build は未成功。下記の追加切り分けを参照。その他 image の build / AWS実行は未実施。
 - Node 24.19.0 では既存テストの AbortSignal / Request 互換エラーで5件失敗。CI の Node20 では全件成功。Node24対応は本整備の検証済み範囲外。
 - GitHub Actions の実行、prod deploy、AWS/state/IAM/secret 変更、repo 改名、PR/main merge、Project board 更新は実施していない。
@@ -63,8 +63,18 @@ Batch build は Dockerfile の最初の RUN (`pip install --upgrade pip` / `yt-d
 
 CDK は基盤導入 commit `be3a2f1` から scaffold と説明され、`infra/bin/app.ts` の stack 名は `YoutubeBackupFrontV2`。workflow / Make / frontend package から CDK の呼び出しはなく、deploy は Actions Variables の配布先を使用する。実デプロイ・所有の根拠は確認できず、未デプロイとも断定しない。既存 main の [最新 deploy run](https://github.com/hiroki1117/youtube-backup-front-v2/actions/runs/36311709384) は移動前 commit `721ed65` の実行で `Configure AWS credentials (OIDC)` が失敗。直近5 runも失敗しており、本変更を本番配布成功の根拠にはしない。
 
-既存環境認証（`terraform_for_codex`）で STS identity は成功したが、Lambda `ListFunctions`、CloudFormation `ListStacks` と指定 stack の `DescribeStackResources` は AccessDenied。GitHub Actions Variables の取得も integration 権限で HTTP403。秘密値を返す Lambda configuration API は使用せず、追加 credential / AssumeRole / 権限拡張も行っていない。このため live Lambda source/hash・CDK所有・実配布先の照合は未完了。
+既存環境認証で STS identity は成功したが、Lambda `ListFunctions`、CloudFormation `ListStacks` と指定 stack の `DescribeStackResources` は AccessDenied。GitHub Actions Variables の取得も integration 権限で HTTP403。秘密値を返す Lambda configuration API は使用せず、追加 credential / AssumeRole / 権限拡張も行っていない。このため live Lambda source/hash・CDK所有・実配布先の照合は未完了。
 
 参照レビューでは、pnpm action v6 の `package_json_file` input の存在、frontend 内の alias / env / Storybook / components 設定、CIの cwd / cache / artifact、Husky・Dependabot の変更を確認し、追加の参照漏れは見つからなかった。
 
 PR は「配布を切り替えない初期整備」としてレビューできる状態。PR作成には別の許可が必要で、作成後は既存CIの実行結果を確認する。main merge は既存 frontend deploy を起動するため、実配布先・OIDC等の確認と別承認が必要。live照合、唯一の配布所有者、旧CIとの切替、CDK所有確認は、本番切替と Issue #41 全体完了に向けた必須事項として残る。
+
+## 新backend実装候補・公開安全性
+
+`feat/fastapi-backend` では [backend/README.md](../backend/README.md) の新API・イベント入口を追加。旧sourceと新runtimeの同一性や本番切替を意味しない。OpenAPIは新FastAPI routerから生成し、旧infra側API YAMLは旧契約の保全資料として扱う。
+
+public設定を読み取り確認。旧履歴の `src/api/client.test.ts`、`src/test/factories.ts`、`src/test/handlers.ts`、`src/types/video.test.ts` に環境由来と見られるS3参照、`batch/scripts/workaroundscript/update_init2complete.py` に固定table名、`docs/migration.md` に実認証主体名がある。現在ツリーの固定table/SSM名・認証主体名は環境変数化または除去し、テスト構成は明確なダミーにした。元SHAと公開向け変更後SHAは既存source manifestで区別する。
+
+限定パターン検査ではaccount ID・access key・秘密鍵・署名URLのliteralは検出していないが、全秘密情報の不存在を保証しない。履歴の修正/force push・公開設定変更・credential失効は行っていない。通常commitで旧履歴は消えないため、履歴の公開レビューと必要な対処の別承認が残る。
+
+履歴範囲: 旧 `src/` の4 test/fixtureパスは `742711f` に固定S3参照があり、集約前main基点 `721ed65` の祖先（元front由来）。保守scriptのtable/S3参照は `7e0ae72` で旧repoから集約して追加、文書の主体名は `dcdf3c3` の監査追記で追加し `be3a991` にも残る。後2件は公開済み `chore/app-repository-foundation` と、それを継承する `feat/fastapi-backend` の履歴に含まれる。検査対象はローカルで取得済みの到達可能履歴であり、未取得remote refs・外部infra/旧repo・削除済みblob・Actionsログ等は完全監査していない。検出したものは識別情報で、認証情報の漏洩を検出したという意味ではない。値そのものは文書・検査出力へ再掲しない。

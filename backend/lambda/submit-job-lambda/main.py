@@ -19,26 +19,26 @@ YTDLP_JOB_REVISION = os.environ["YTDLP_JOB_REVISION"]
 DYNAMO_TABLE_NAME = os.environ["DYNAMO_TABLE_NAME"]
 BACKUP_BACKET = os.environ["BACKUP_BACKET"]
 
-ssm = boto3.client('ssm', region_name='ap-northeast-1')
+ssm = boto3.client('ssm', region_name=os.environ.get("AWS_REGION"))
 ssm_response = ssm.get_parameters(
     Names = [
-        ('/youtube-backup/youtube-api-key'),
-        ('/youtube-backup/twitter-api-key'),
-        ('/youtube-backup/twitter-api-secret'),
-        ('/youtube-backup/twitter-access-token'),
-        ('/youtube-backup/twitter-access-token-secret'),
-        ('/youtube-backup/proxy-path'),
+        (os.environ["SSM_YOUTUBE_API_KEY_PARAMETER"]),
+        (os.environ["SSM_TWITTER_API_KEY_PARAMETER"]),
+        (os.environ["SSM_TWITTER_API_SECRET_PARAMETER"]),
+        (os.environ["SSM_TWITTER_ACCESS_TOKEN_PARAMETER"]),
+        (os.environ["SSM_TWITTER_ACCESS_TOKEN_SECRET_PARAMETER"]),
+        (os.environ["SSM_PROXY_PATH_PARAMETER"]),
         ('/youtube-backup/cookie-s3-path'),
     ],
     WithDecryption=True
 )
 f = lambda z: lambda x,y: y["Value"] if y["Name"]==z else x
-YOUTUBE_API_KEY = reduce(f('/youtube-backup/youtube-api-key'), ssm_response['Parameters'], "")
-TWITTER_API_KEY = reduce(f('/youtube-backup/twitter-api-key'), ssm_response['Parameters'], "")
-TWITTER_API_SECRET = reduce(f('/youtube-backup/twitter-api-secret'), ssm_response['Parameters'], "")
-TWITTER_ACCESS_TOKEN = reduce(f('/youtube-backup/twitter-access-token'), ssm_response['Parameters'], "")
-TWITTER_ACCESS_TOKEN_SECRET = reduce(f('/youtube-backup/twitter-access-token-secret'), ssm_response['Parameters'], "")
-PROXY_PATH = reduce(f('/youtube-backup/proxy-path'), ssm_response['Parameters'], "")
+YOUTUBE_API_KEY = reduce(f(os.environ["SSM_YOUTUBE_API_KEY_PARAMETER"]), ssm_response['Parameters'], "")
+TWITTER_API_KEY = reduce(f(os.environ["SSM_TWITTER_API_KEY_PARAMETER"]), ssm_response['Parameters'], "")
+TWITTER_API_SECRET = reduce(f(os.environ["SSM_TWITTER_API_SECRET_PARAMETER"]), ssm_response['Parameters'], "")
+TWITTER_ACCESS_TOKEN = reduce(f(os.environ["SSM_TWITTER_ACCESS_TOKEN_PARAMETER"]), ssm_response['Parameters'], "")
+TWITTER_ACCESS_TOKEN_SECRET = reduce(f(os.environ["SSM_TWITTER_ACCESS_TOKEN_SECRET_PARAMETER"]), ssm_response['Parameters'], "")
+PROXY_PATH = reduce(f(os.environ["SSM_PROXY_PATH_PARAMETER"]), ssm_response['Parameters'], "")
 COOKIE_S3_PATH = reduce(f('/youtube-backup/cookie-s3-path'), ssm_response['Parameters'], "")
 
 RESULT_ERROR = "error"

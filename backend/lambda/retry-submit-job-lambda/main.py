@@ -10,16 +10,16 @@ JOB_DEFINITION_NAME = os.environ["JOB_DEFINITION_NAME"]
 JOB_REVISION = os.environ["JOB_REVISION"]
 YTDLP_JOB_DEFINITION_NAME = os.environ["YTDLP_JOB_DEFINITION_NAME"]
 YTDLP_JOB_REVISION = os.environ["YTDLP_JOB_REVISION"]
-ssm = boto3.client('ssm', region_name='ap-northeast-1')
+ssm = boto3.client('ssm', region_name=os.environ.get("AWS_REGION"))
 ssm_response = ssm.get_parameters(
     Names=[
-        ('/youtube-backup/proxy-path'),
+        (os.environ["SSM_PROXY_PATH_PARAMETER"]),
         ('/youtube-backup/cookie-s3-path'),
     ],
     WithDecryption=True
 )
 f = lambda z: lambda x,y: y["Value"] if y["Name"]==z else x
-PROXY_PATH = reduce(f('/youtube-backup/proxy-path'), ssm_response['Parameters'], "")
+PROXY_PATH = reduce(f(os.environ["SSM_PROXY_PATH_PARAMETER"]), ssm_response['Parameters'], "")
 COOKIE_S3_PATH = reduce(f('/youtube-backup/cookie-s3-path'), ssm_response['Parameters'], "")
 
 def lambda_handler(event, context):

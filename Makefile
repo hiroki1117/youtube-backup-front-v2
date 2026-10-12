@@ -1,6 +1,7 @@
 .PHONY: install check build backend batch
 install:
 	cd frontend && pnpm install --frozen-lockfile
+	$(MAKE) -C backend install
 check:
 	cd frontend && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test
 	$(MAKE) -C backend check

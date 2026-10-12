@@ -34,3 +34,7 @@ pnpm-debug.log*
 __pycache__/
 *.pyc
 build/
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/

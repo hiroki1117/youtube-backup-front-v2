@@ -9,16 +9,16 @@ from functools import reduce
 
 def lambda_handler(event, context):
     
-    ssm = boto3.client('ssm', region_name='ap-northeast-1')
+    ssm = boto3.client('ssm', region_name=os.environ.get("AWS_REGION"))
     ssm_response = ssm.get_parameters(
-        Names = [('/youtube-backup/scrapbox-credentials'), ('/youtube-backup/scrapbox-projects')],
+        Names = [(os.environ["SSM_SCRAPBOX_CREDENTIALS_PARAMETER"]), (os.environ["SSM_SCRAPBOX_PROJECTS_PARAMETER"])],
         WithDecryption=True
     )
     f = lambda z: lambda x,y: y["Value"] if y["Name"]==z else x
     YOUTUBE_BACKUP_ENDPOINT = os.environ["SUBMIT_JOB_ENDPOINT"]
-    SCRAPBOX_CREDENTIALS = reduce(f('/youtube-backup/scrapbox-credentials'), ssm_response['Parameters'], "")
+    SCRAPBOX_CREDENTIALS = reduce(f(os.environ["SSM_SCRAPBOX_CREDENTIALS_PARAMETER"]), ssm_response['Parameters'], "")
     # hoge,fuga,...形式
-    SCRAPBOX_PROJECTS = reduce(f('/youtube-backup/scrapbox-projects'), ssm_response['Parameters'], "")
+    SCRAPBOX_PROJECTS = reduce(f(os.environ["SSM_SCRAPBOX_PROJECTS_PARAMETER"]), ssm_response['Parameters'], "")
 
     LIMIT = "25"
     base_endpoint = "https://scrapbox.io/api/pages/"
