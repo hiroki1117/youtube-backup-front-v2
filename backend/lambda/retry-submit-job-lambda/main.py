@@ -14,13 +14,13 @@ ssm = boto3.client('ssm', region_name=os.environ.get("AWS_REGION"))
 ssm_response = ssm.get_parameters(
     Names=[
         (os.environ["SSM_PROXY_PATH_PARAMETER"]),
-        ('/youtube-backup/cookie-s3-path'),
+        (os.environ["SSM_COOKIE_S3_PATH_PARAMETER"]),
     ],
     WithDecryption=True
 )
 f = lambda z: lambda x,y: y["Value"] if y["Name"]==z else x
 PROXY_PATH = reduce(f(os.environ["SSM_PROXY_PATH_PARAMETER"]), ssm_response['Parameters'], "")
-COOKIE_S3_PATH = reduce(f('/youtube-backup/cookie-s3-path'), ssm_response['Parameters'], "")
+COOKIE_S3_PATH = reduce(f(os.environ["SSM_COOKIE_S3_PATH_PARAMETER"]), ssm_response['Parameters'], "")
 
 def lambda_handler(event, context):
     # 動画DLに失敗している(upload_status=init)データを取得

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.app import app, backup_handler, create_app, video_handler
@@ -121,3 +122,22 @@ def test_openapi_generated_from_same_routers():
     assert "/backup_requests" not in saved["paths"]
     assert "post" in saved["paths"]["/videos/{video_id}/backup"]
     assert "202" in saved["paths"]["/videos"]["post"]["responses"]
+
+
+@pytest.mark.parametrize("kind", ["all", "video", "backup"])
+def test_runtime_apps_have_no_unauthenticated_documentation_routes(kind, monkeypatch):
+    monkeypatch.delenv("BACKEND_LOCAL_TOKEN", raising=False)
+    with patch("boto3.Session", side_effect=AssertionError("AWS at docs request")):
+        runtime = create_app(kind)
+        with TestClient(runtime) as client:
+            for path in ("/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"):
+                assert client.get(path).status_code == 404
+        # Disabling automatic HTTP routes must not disable offline schema generation.
+        assert runtime.openapi()["paths"]
+
+
+@pytest.mark.parametrize("handler", [video_handler, backup_handler])
+def test_lambda_documentation_routes_are_disabled(handler):
+    for path in ("/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect"):
+        with patch("boto3.Session", side_effect=AssertionError("AWS at docs request")):
+            assert handler(gateway_event(path), None)["statusCode"] == 404

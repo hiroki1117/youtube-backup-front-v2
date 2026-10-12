@@ -108,11 +108,9 @@ class BackupService:
     def delete(self, video_id: str) -> None:
         video = self.video(video_id)
         if video["upload_status"] != "complete":
-            if not video.get("batch_job_id"):
-                raise DomainError(409, "job_needs_reconciliation")
-            job = self.jobs.get(video["batch_job_id"])
-            if job is None or job["status"] != "FAILED":
-                raise DomainError(409, "backup_in_progress")
+            # FAILED does not prove no upload: yt-dlp appends the actual extension and
+            # its S3 completion notification may arrive after Batch reaches FAILED.
+            raise DomainError(409, "backup_object_needs_reconciliation")
         self.videos.delete(video, uuid4().hex)
 
     def playback(self, video_id: str) -> str:

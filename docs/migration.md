@@ -78,3 +78,7 @@ public設定を読み取り確認。旧履歴の `src/api/client.test.ts`、`src
 限定パターン検査ではaccount ID・access key・秘密鍵・署名URLのliteralは検出していないが、全秘密情報の不存在を保証しない。履歴の修正/force push・公開設定変更・credential失効は行っていない。通常commitで旧履歴は消えないため、履歴の公開レビューと必要な対処の別承認が残る。
 
 履歴範囲: 旧 `src/` の4 test/fixtureパスは `742711f` に固定S3参照があり、集約前main基点 `721ed65` の祖先（元front由来）。保守scriptのtable/S3参照は `7e0ae72` で旧repoから集約して追加、文書の主体名は `dcdf3c3` の監査追記で追加し `be3a991` にも残る。後2件は公開済み `chore/app-repository-foundation` と、それを継承する `feat/fastapi-backend` の履歴に含まれる。検査対象はローカルで取得済みの到達可能履歴であり、未取得remote refs・外部infra/旧repo・削除済みblob・Actionsログ等は完全監査していない。検出したものは識別情報で、認証情報の漏洩を検出したという意味ではない。値そのものは文書・検査出力へ再掲しない。
+
+追加レビューでSSM名の数字を含む項目の置換漏れを確認し、submit/retryの保管ソースを修正した。以前の限定検査だけでは完全除去を確認できていなかったため、既知のSSM prefixを持つliteralを保管Python全体でAST確認した。公開済み `29c8a56` にもこの固定参照が残り、その履歴の対処は未承認。値は再掲しない。
+
+削除レビューでは、拡張子なしのplaceholderを削除しても upload済み実体が残る競合をfakeで再現した。新APIは `init` をBatch FAILEDでも削除せず409とし、完了通知で現物pathを確定するまで保持する。Repositoryの削除lockにも `upload_status=complete` 条件を追加した。現物が不明なケースの削除成功やAWS実データの無残存は検証済みと扱わない。実行appの自動docs/OpenAPI HTTP入口は無効化し、offline exportは維持する。

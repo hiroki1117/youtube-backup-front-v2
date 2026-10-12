@@ -190,13 +190,17 @@ class VideoRepository:
     def delete(self, video: dict, token: str) -> None:
         # Lock against concurrent backup submission before deleting either resource.
         condition = "attribute_exists(video_id) AND attribute_not_exists(deletion_token) "
-        condition += "AND s3fullpath=:path"
+        condition += "AND s3fullpath=:path AND upload_status=:complete"
         try:
             self.table.update_item(
                 Key={"video_id": video["video_id"]},
                 UpdateExpression="SET deletion_token=:token",
                 ConditionExpression=condition,
-                ExpressionAttributeValues={":token": token, ":path": video["s3fullpath"]},
+                ExpressionAttributeValues={
+                    ":token": token,
+                    ":path": video["s3fullpath"],
+                    ":complete": "complete",
+                },
             )
             path = urlparse(video["s3fullpath"])
             self.s3.delete_object(Bucket=path.netloc, Key=path.path.lstrip("/"))

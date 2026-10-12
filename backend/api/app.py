@@ -8,7 +8,14 @@ from usecases.models import DomainError
 
 
 def create_app(kind: str = "all") -> FastAPI:
-    app = FastAPI(title="YouTube Backup API", version="0.1.0", dependencies=[Depends(require_auth)])
+    app = FastAPI(
+        title="YouTube Backup API",
+        version="0.1.0",
+        dependencies=[Depends(require_auth)],
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     if kind in {"all", "video"}:
         app.include_router(video_router)
     if kind in {"all", "backup"}:

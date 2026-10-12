@@ -168,3 +168,29 @@ def test_natural_workaround_prefix_keeps_existing_id(service):
     video = service.video("ABCXYZ-abcd")
     assert service.complete_records(event_for(video))["updated"] == 1
     assert service.video("ABCXYZ-abcd")["video_id"] == "ABCXYZ-abcd"
+
+
+def test_failed_job_with_uploaded_object_and_delayed_event_is_not_deleted(service):
+    service.register("https://youtu.be/abcdefghijk")
+    video = service.video("abcdefghijk")
+    actual_path = video["s3fullpath"] + ".mp4"
+    objects = {actual_path}
+    original_delete = service.videos.delete
+
+    def delete(item, token):
+        objects.discard(item["s3fullpath"])
+        original_delete(item, token)
+
+    service.videos.delete = Mock(side_effect=delete)
+    service.jobs.items[video["batch_job_id"]]["status"] = "FAILED"
+    with pytest.raises(DomainError, match="backup_object_needs_reconciliation"):
+        service.delete("abcdefghijk")
+    service.videos.delete.assert_not_called()
+    assert service.videos.get("abcdefghijk") == video
+    assert objects == {actual_path}
+    # Late completion resolves the exact object. Only then may deletion remove both.
+    assert service.complete_records(event_for(video))["updated"] == 1
+    assert service.video("abcdefghijk")["s3fullpath"] == actual_path
+    service.delete("abcdefghijk")
+    assert not objects
+    assert service.videos.get("abcdefghijk") is None

@@ -57,6 +57,8 @@ def test_dynamo_guards_no_upsert_or_stale_completion(service):
 def test_delete_lock_precedes_s3_and_is_preserved_on_failure(service):
     service.register("https://youtu.be/abcdefghijk")
     video = service.video("abcdefghijk")
+    video["upload_status"] = "complete"
+    video["s3fullpath"] += ".mp4"
     table = Mock()
     repo = make_repo(table)
     order = Mock()
@@ -69,6 +71,7 @@ def test_delete_lock_precedes_s3_and_is_preserved_on_failure(service):
         "table.delete_item",
     ]
     assert "deletion_token=:token" in table.delete_item.call_args.kwargs["ConditionExpression"]
+    assert "upload_status=:complete" in table.update_item.call_args.kwargs["ConditionExpression"]
     table.reset_mock()
     repo.s3.delete_object.side_effect = ClientError(
         {"Error": {"Code": "AccessDenied"}}, "DeleteObject"

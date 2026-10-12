@@ -17,7 +17,7 @@
     "backend/lambda/retry-submit-job-lambda/main.py": {
       "source": "lambda/retry-submit-job-lambda/main.py",
       "sha256": "94933633aabdfe287efc615f6c177612a014359f5514613c51efdcbe5d5e4a8e",
-      "current_sha256": "56d8974093ae2b9005de7bd9076a52245fbe7c8b22e3f6f52f70f82e446fb8ae"
+      "current_sha256": "90e521dd4309ed230b6aa0d5bdd6d62d2519c4de1bf482141d8b95fcfafa7f9d"
     },
     "backend/lambda/scrapbox-backup-lambda/main.py": {
       "source": "lambda/scrapbox-backup-lambda/main.py",
@@ -27,7 +27,7 @@
     "backend/lambda/submit-job-lambda/main.py": {
       "source": "lambda/submit-job-lambda/main.py",
       "sha256": "397948af40a78453f9ea5aec909f0fed5705d90cd5493651de59c51fdba99029",
-      "current_sha256": "c61a1f44c6cd2b3cb39cbdbb0e3a9ce0a00ee877b43a358c19c718216a292037"
+      "current_sha256": "233f4bfad02164e6bcd568d811510d9cf7bbf6c6819b9588b65bcf3da16d7fe4"
     },
     "backend/lambda/update-video-lambda/main.py": {
       "source": "lambda/update-video-lambda/main.py",

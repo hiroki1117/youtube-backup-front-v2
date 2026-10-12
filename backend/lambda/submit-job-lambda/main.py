@@ -28,7 +28,7 @@ ssm_response = ssm.get_parameters(
         (os.environ["SSM_TWITTER_ACCESS_TOKEN_PARAMETER"]),
         (os.environ["SSM_TWITTER_ACCESS_TOKEN_SECRET_PARAMETER"]),
         (os.environ["SSM_PROXY_PATH_PARAMETER"]),
-        ('/youtube-backup/cookie-s3-path'),
+        (os.environ["SSM_COOKIE_S3_PATH_PARAMETER"]),
     ],
     WithDecryption=True
 )
@@ -39,7 +39,7 @@ TWITTER_API_SECRET = reduce(f(os.environ["SSM_TWITTER_API_SECRET_PARAMETER"]), s
 TWITTER_ACCESS_TOKEN = reduce(f(os.environ["SSM_TWITTER_ACCESS_TOKEN_PARAMETER"]), ssm_response['Parameters'], "")
 TWITTER_ACCESS_TOKEN_SECRET = reduce(f(os.environ["SSM_TWITTER_ACCESS_TOKEN_SECRET_PARAMETER"]), ssm_response['Parameters'], "")
 PROXY_PATH = reduce(f(os.environ["SSM_PROXY_PATH_PARAMETER"]), ssm_response['Parameters'], "")
-COOKIE_S3_PATH = reduce(f('/youtube-backup/cookie-s3-path'), ssm_response['Parameters'], "")
+COOKIE_S3_PATH = reduce(f(os.environ["SSM_COOKIE_S3_PATH_PARAMETER"]), ssm_response['Parameters'], "")
 
 RESULT_ERROR = "error"
 RESULT_SUCC = "succ"
