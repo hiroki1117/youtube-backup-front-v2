@@ -1,83 +1,72 @@
-# youtube-backup-front-v2
+# YouTube Backup
 
-`youtube-backup` のフロントエンド刷新（v2）。旧 CRA + React 17 + Amplify + Redux スタックを、
-モダンな Vite + React 18 + TypeScript strict へ置き換える。本リポジトリの U1（app-foundation / walking skeleton）は
-共通基盤（認証・API アクセス層・ドメイン型・状態表示/テーマ・ルーティング）とテスト/CI 土台を確立する。
+frontend・backend（Lambda）・batch を1つの repo で変更・検証し、各部分の独立した build / deploy を維持するための初期整備。
+現在の repo 名は `youtube-backup-front-v2`。将来 `youtube-backup-v2` へ改名する。
+[Issue #41](https://github.com/hiroki1117/projects/issues/41) の移行途中で、本番のコード一致・配布切替は未完了。
 
-## 技術スタック
+| 配置                               | 役割と現在の配布元                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [frontend/](frontend/)             | Vite / React / TypeScript アプリ。既存の [deploy.yml](.github/workflows/deploy.yml) が S3 / CloudFront へ配布 |
+| [backend/lambda/](backend/lambda/) | FastAPI 実装候補と旧ソース保全。詳細は [backend/README.md](backend/README.md)。本番未切替                     |
+| [batch/scripts/](batch/scripts/)   | download / upload / whisper / 保守スクリプトを保全。image push は旧 `youtube-backup` の CI が継続             |
+| [infra/](infra/)                   | 既存 CDK scaffold。実所有の確認前に適用・削除しない                                                           |
 
-| 領域         | 採用                                                                           |
-| ------------ | ------------------------------------------------------------------------------ |
-| ビルド/言語  | Vite 5 + React 18 + TypeScript strict + pnpm                                   |
-| UI           | shadcn/ui + Tailwind CSS                                                       |
-| ルーティング | React Router v6（`createBrowserRouter`）+ `RequireAuth`                        |
-| サーバー状態 | TanStack Query + 単一 fetch ラッパ（`ApiResult<T>` 正規化）                    |
-| 認証         | `amazon-cognito-identity-js`（USER_SRP_AUTH）                                  |
-| テスト       | Vitest + React Testing Library + MSW + `@vitest/coverage-v8`（line 80% floor） |
-| 品質         | ESLint flat config + Prettier + husky/lint-staged                              |
+AWS 定義・state の管理先は [hiroki1117/infra](https://github.com/hiroki1117/infra)。
+app は source と成果物作成、infra は AWS 設定と成果物参照を担当する。Lambda code 更新の唯一の所有者は切替前に確定する。
+`youtube_backup2` はインフラ用、`youtube-backup-front` は旧 CRA 実装で、今回のアプリ移管元ではない。
+出所は [source-manifest.json](docs/source-manifest.json)、境界・制約・切替条件は [migration.md](docs/migration.md) を参照。
 
-## ディレクトリ構成（レイヤ一方向依存: `components → hooks → api → types`）
+## セットアップと起動
 
-```
-src/
-  types/       ドメイン型（Video / UploadStatus / parseVideo） … C3 VideoModel
-  api/         唯一の HTTP 境界（client.ts=ApiClient/C2, auth.ts=AuthModule, config.ts）
-  hooks/       useAuth（AuthProvider）/ useTheme（ThemeProvider）/ useVideos
-  components/  StatusView(C4) / AppShell(C5) / RequireAuth / ThemeToggle / Toaster / ui(shadcn)
-  app/         LoginPage / VideosPage / routes（画面・ルート定義）
-  lib/         cn / openExternalUrl / notify / ROUTES（共有 leaf ユーティリティ）
-  test/        MSW server/handlers・factories・setup
-infra/         S3 + CloudFront(OAC) の AWS CDK スタック（別プロジェクト scaffold）
-```
-
-逆流は ESLint `import/no-cycle`（error）で機械的に禁止する。
-
-## 前提
-
-- Node.js 20 以上、pnpm（`packageManager` フィールドで版固定 / corepack）。
-
-## セットアップ
+Node / pnpm の要件・固定版と全コマンドは [frontend/package.json](frontend/package.json)、検証する Node は [CI](.github/workflows/ci.yml) を参照。
+backend の Python 要件・セットアップは [backend/README.md](backend/README.md) を参照。Make、shell も使用する。Docker は batch image のローカル build に必要。
+pnpm を用意した後、repo 直下で実行する（専用モノレポ framework は使用しない）。
 
 ```bash
-corepack enable
-pnpm install
-cp .env.example .env   # 値を設定（VITE_* のみクライアントへ公開される）
+make install # frontend + backend（Python要件を先に満たす）
+cp frontend/.env.example frontend/.env # 公開構成値を設定
+pnpm --dir frontend dev
 ```
 
-環境変数（すべて `VITE_*`、ハードコード禁止）:
+環境変数の説明は [frontend/.env.example](frontend/.env.example)。`.env` は frontend 内から読み込む。
+`VITE_*` はブラウザへ公開されるため秘密値を入れない。
+開発サーバーの起動と HTTP 応答はダミー構成値で確認済み。本番認証・API 疎通は未確認。
 
-| 変数                        | 用途                                 |
-| --------------------------- | ------------------------------------ |
-| `VITE_API_BASE_URL`         | youtube-backup REST API のベース URL |
-| `VITE_COGNITO_USER_POOL_ID` | Cognito User Pool ID                 |
-| `VITE_COGNITO_CLIENT_ID`    | Cognito App Client ID                |
-| `VITE_COGNITO_REGION`       | Cognito リージョン                   |
+## 検証・build
 
-## 開発コマンド
+repo 全体の検証と frontend の成果物作成:
 
 ```bash
-pnpm dev            # 開発サーバー
-pnpm build          # tsc --noEmit && vite build（本番ビルド）
-pnpm typecheck      # tsc --noEmit
-pnpm lint           # eslint .
-pnpm format:check   # prettier --check .
-pnpm test           # vitest run --coverage（全テスト、line 80% floor）
-
-# U1（app-foundation）に限定したテスト実行:
-pnpm vitest run src/types src/api src/hooks src/components src/app --coverage
+make check # frontend 品質検査、backend pytest/Ruff、batch 構文
+make build # frontend と Storybook
 ```
 
-## CI / デプロイ
+各部分も独立して実行できる:
 
-- **CI**（`.github/workflows/ci.yml`, PR/`main`）: frozen-lockfile → typecheck → lint → format → test+coverage → build。
-  いずれか失敗で merge ブロック（team-practices）。
-- **Deploy**（`.github/workflows/deploy.yml`, `main` マージ）: `vite build` → S3 sync（ハッシュ資産は immutable、
-  `index.html` は no-cache）→ CloudFront invalidation（`/index.html`）。認証は GitHub OIDC → IAM role。
-  バケット名・distribution ID は Actions Variables/Secrets で注入（ハードコードなし）。
-- **依存自動更新**（`.github/dependabot.yml`）: 週次（NFR5.1）。
-- **インフラ**（`infra/`）: S3 + CloudFront(OAC) + Response Headers Policy（CSP/HSTS 等）+ SPA フォールバック（AWS CDK）。
+```bash
+pnpm --dir frontend typecheck
+pnpm --dir frontend test
+pnpm --dir frontend build
+make -C backend check
+make -C backend package FUNCTION=video # 検証用 ZIP。本番配布なし
+make -C batch check
+make -C batch build IMAGE=yt-dlp-script TAG=youtube-backup-candidate:local
+```
 
-## スコープ（U1 walking skeleton）
+frontend の既存テスト・型・lint・format、Vite / Storybook build、新 backend の pytest・Ruff・ローカルHTTP・依存同梱ZIPと handler import、batch の構文を確認。
+batch image build と AWS 上の機能検証は未完了。詳細な検証結果と環境制約は [migration.md](docs/migration.md)。
+frontend の機能・画面は [src/app/](frontend/src/app/)、API境界は [src/api/](frontend/src/api/)、ドメイン型は [src/types/](frontend/src/types/) が入口。
+レイヤは `components → hooks → api → types`。Storybook は `pnpm --dir frontend storybook`、設定は [.storybook/](frontend/.storybook/)。
 
-本 Bolt は「モダンスタック確立 + テスト/CI 土台 + 認証〜一覧の最小疎通」を達成する。
-一覧のフィルタ/ソート/ページング、検索・登録・削除・再生は後続ユニット（U2〜U6）で実装する。
+## 配布と残る制約
+
+既存 frontend deploy の trigger・production environment・OIDC を維持し、実行パスを frontend に変更した。
+配布対象は `frontend/dist/` のみ。既存 main の最新 deploy は OIDC credential 設定で失敗しており、実配布先の確認も権限不足で未完了。
+main merge は既存 deploy を起動するため、配布設定の確認と別承認が必要。
+
+backend / batch の新しい本番 workflow は追加していない。旧 CI が image の SHA / `latest` を push し、infra が `latest` を参照する間、同じ ECR へ二重配布しない。
+Lambda live source / runtime / layer の照合、配布所有者・旧CI切替、CDK所有、改名時の OIDC / 外部連携整合が残る。
+repo 改名・PR / merge・deploy・AWS / state / IAM / secret 変更・既存CI停止/起動は今回実施していない。
+Lambdalith 化、runtime / 依存更新、image digest 固定化は別段階。
+
+公開前提: 現在ツリーの実環境参照は環境変数化したが、旧Git履歴に固定resource名・認証主体名等が残る。公開安全性の履歴レビュー・承認された対処が必要。新APIの詳細・未移植機能は backend README を参照。

@@ -14,6 +14,10 @@ permissions:
   id-token: write # GitHub OIDC → AWS IAM role の AssumeRole 用
   contents: read
 
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
   deploy:
     name: Build and deploy to S3 + CloudFront
@@ -26,12 +30,15 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
 
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile

@@ -8,6 +8,10 @@ on:
 
 # team-practices の CI 品質ゲート（全チェックが merge をブロック）。
 # フィードバック目標 10 分以内。pnpm store をキャッシュして高速化する。
+defaults:
+  run:
+    working-directory: frontend
+
 jobs:
   quality:
     name: Quality gates
@@ -19,6 +23,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
         # packageManager フィールドから pnpm バージョンを解決（corepack 連携）
 
       - name: Setup Node
@@ -26,6 +32,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
@@ -50,7 +57,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: coverage/
+          path: frontend/coverage/
           if-no-files-found: ignore
 
   # Storybook ビルドゲート（team-practices: 既存ゲートと並列の別ジョブ、merge をブロック）。
@@ -68,12 +75,15 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
 
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
@@ -86,6 +96,51 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: storybook-static
-          path: storybook-static/
+          path: frontend/storybook-static/
           retention-days: 7
           if-no-files-found: ignore
+
+  sources:
+    name: Backend and batch source checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: python -m venv backend/.venv
+      - run: backend/.venv/bin/python -m pip install -c backend/requirements.lock -e "backend[dev]"
+      - run: make backend batch
+      - run: make -C backend export
+      - run: git diff --exit-code -- contracts/openapi.json
+
+  backend-package:
+    name: Backend ZIP (${{ matrix.function }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    strategy:
+      matrix:
+        function: [video, backup, s3_complete, scrapbox_scan, retry]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install -c requirements.lock -e '.[dev]'
+      - run: make package FUNCTION=${{ matrix.function }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-${{ matrix.function }}
+          path: backend/build/${{ matrix.function }}.zip
+          retention-days: 7

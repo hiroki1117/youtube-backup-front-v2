@@ -2,7 +2,7 @@ version: 2
 # NFR5.1: 依存自動更新を週次で有効化（依存陳腐化の再発防止）。
 updates:
   - package-ecosystem: npm # pnpm-lock.yaml を対象（Dependabot は pnpm ロックに対応）
-    directory: "/"
+    directory: "/frontend"
     schedule:
       interval: weekly
       day: monday
