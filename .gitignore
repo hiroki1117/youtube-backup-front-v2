@@ -29,3 +29,8 @@ pnpm-debug.log*
 
 # Husky internal
 .husky/_
+
+# Python / candidate artifacts
+__pycache__/
+*.pyc
+build/
