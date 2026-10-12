@@ -33,7 +33,7 @@ wheel と各 ZIP は `build/` に生成。共有コードと固定 runtime 依�
 - `GET/POST /videos/{video_id}/backup` は1つの現在の backup を照会・操作。公開 `/backup_requests` は追加しない。失敗した追跡済みjobだけ再試行し、処理中・完了は再投入しない。
 - `api.app.video_handler` / `api.app.backup_handler` は同じ router を使うリソース別 Mangum 入口（公開docs入口は無効）。認証は API Gateway authorizer の検証済み `sub` が必須。Bearer header だけでは Lambda を認可しない。IAMによる直接invoke制限も infra の責務。
 - 旧 frontend は現APIに認証headerを付けていないため、新APIへの接続変更・Gateway authorizer設定・CORS/権限の実検証が切替前に必要。現frontendを新APIへ接続したとは扱わない。
-- ローカルHTTPは runtime の `BACKEND_LOCAL_TOKEN` が必要で、未設定時は拒否。import 時の AWS接続なし。
+- ローカルHTTPは runtime の `BACKEND_LOCAL_TOKEN` が必要で、未設定時は拒否。import 時の AWS接続なし。AWS resource はrequest/invocation単位で構築し、HTTP request間で共有しない。
 - `events.handlers.s3_complete` / `scrapbox_scan` / `retry` は HTTP化しない。AWS invoke/triggerの認可はinfra。`VideoRepository` はDynamo/S3/メタデータ、`JobRepository` はBatch登録・照会と必要なSSM参照を担当する。
 
 既存Dynamo属性・GSIとbatch環境変数は維持。job/attempt/state・削除lockを必要なレコードにだけ追加し、履歴テーブルは作らない。新 attempt のS3 keyは固有directoryにして遅延イベントを区別する。削除は既存の「S3キー＋登録情報」で、Batch cancelやS3旧version全消去は含まない。

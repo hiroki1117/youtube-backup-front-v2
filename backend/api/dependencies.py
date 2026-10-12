@@ -1,6 +1,5 @@
 import hmac
 import os
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -31,6 +30,6 @@ def require_auth(
         raise DomainError(401, "authentication_required")
 
 
-@lru_cache
 def get_service() -> BackupService:
+    # Request/invocation scope: mutable boto3 resources are not shared across HTTP requests.
     return BackupService(VideoRepository(), JobRepository())
