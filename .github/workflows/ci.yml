@@ -108,7 +108,7 @@ jobs:
         working-directory: .
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           cache: pip
@@ -131,7 +131,7 @@ jobs:
         function: [video, backup, s3_complete, scrapbox_scan, retry]
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           cache: pip
