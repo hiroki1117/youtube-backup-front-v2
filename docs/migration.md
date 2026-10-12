@@ -50,6 +50,20 @@ CDK は stack/resource/state と infra 定義の対応を確認後に移管ま�
 - Lambda9件と batch Python の AST、download / whisper の sh 構文、upload の bash 構文が成功。Lambda 候補 ZIP9件の内容も source と一致。
 - 旧ソースの末尾空白も内容保全のため維持。移管ファイル以外の `git diff --check` は成功。
 - 移管元 commit / SHA256、frontend source と lockfile の無変更、workflow YAML・参照パス、既存 trigger / deploy 設定の保持を確認。
-- yt-dlp Docker build はコンテナ内から PyPI へ Network is unreachable で失敗（host network でも同じ）。image build 成功とは扱わない。その他 image の build / AWS実行は未実施。
+- yt-dlp Docker build は未成功。下記の追加切り分けを参照。その他 image の build / AWS実行は未実施。
 - Node 24.19.0 では既存テストの AbortSignal / Request 互換エラーで5件失敗。CI の Node20 では全件成功。Node24対応は本整備の検証済み範囲外。
 - GitHub Actions の実行、prod deploy、AWS/state/IAM/secret 変更、repo 改名、PR/main merge、Project board 更新は実施していない。
+
+## 追加の読み取り確認（2026-10-12）
+
+Batch build は Dockerfile の最初の RUN (`pip install --upgrade pip` / `yt-dlp[default]==2026.8.19`) で `https://pypi.org/simple/pip/` と `/simple/yt-dlp/` に接続できず、`[Errno 101] Network is unreachable`。Docker Hub の base image 取得は成功していた。既存の HTTP(S) proxy を Docker の標準 build-arg で渡すと接続は進み、proxy の CA が container 内で信頼されず `CERTIFICATE_VERIFY_FAILED: self-signed certificate in certificate chain` になった。TLS検証の無効化・別経路への迂回は行っていない。
+
+同じ許可済み proxy と既存 CA を使用する host では PyPI への HTTPS が成功し、Python3.12 用の `pip download --only-binary=:all: 'yt-dlp[default]==2026.8.19' awscli==1.32.0` で依存全体の解決・取得が成功した。版が存在しないことによる失敗ではない。image build の完了には、許可済み proxy / CA を通常の検証付きで利用できる build 環境が必要。取得物は一時ディレクトリのみで app/旧source/本番image に変更を加えていない。
+
+CDK は基盤導入 commit `be3a2f1` から scaffold と説明され、`infra/bin/app.ts` の stack 名は `YoutubeBackupFrontV2`。workflow / Make / frontend package から CDK の呼び出しはなく、deploy は Actions Variables の配布先を使用する。実デプロイ・所有の根拠は確認できず、未デプロイとも断定しない。
+
+既存環境認証（`terraform_for_codex`）で STS identity は成功したが、Lambda `ListFunctions`、CloudFormation `ListStacks` と指定 stack の `DescribeStackResources` は AccessDenied。GitHub Actions Variables の取得も integration 権限で HTTP403。秘密値を返す Lambda configuration API は使用せず、追加 credential / AssumeRole / 権限拡張も行っていない。このため live Lambda source/hash・CDK所有・実配布先の照合は未完了。
+
+参照レビューでは、pnpm action v6 の `package_json_file` input の存在、frontend 内の alias / env / Storybook / components 設定、CIの cwd / cache / artifact、Husky・Dependabot の変更を確認し、追加の参照漏れは見つからなかった。
+
+PR は「配布を切り替えない初期整備」としてレビューできる状態。PR作成には別の許可が必要で、作成後は既存CIの実行結果を確認する。main merge は既存 frontend deploy を起動するため、実配布先・OIDC等の確認と別承認が必要。live照合、唯一の配布所有者、旧CIとの切替、CDK所有確認は、本番切替と Issue #41 全体完了に向けた必須事項として残る。
