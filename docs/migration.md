@@ -45,7 +45,8 @@ CDK は stack/resource/state と infra 定義の対応を確認後に移管ま�
 
 ## このブランチの検証（2026-10-12）
 
-- pnpm 10.34.5 の frozen install、Node 20.20.2 の型検査・lint・format・223 tests / 32 files が成功。line coverage 95.99%。lint の既存 warning は6件。
+- README の `make install` / `make check` を repo 直下から確認。pnpm 10.34.5 の frozen install、Node 20.20.2 の型検査・lint・format・223 tests / 32 files が成功。line coverage 95.99%。lint の既存 warning は6件。
+- ダミー構成値で frontend dev server の起動・HTTP200・Vite client/entry の応答を確認。本番認証/API疎通は未実施。
 - Vite / Storybook build が成功。既存の bundle size warning あり。
 - Lambda9件と batch Python の AST、download / whisper の sh 構文、upload の bash 構文が成功。Lambda 候補 ZIP9件の内容も source と一致。
 - 旧ソースの末尾空白も内容保全のため維持。移管ファイル以外の `git diff --check` は成功。
@@ -60,7 +61,7 @@ Batch build は Dockerfile の最初の RUN (`pip install --upgrade pip` / `yt-d
 
 同じ許可済み proxy と既存 CA を使用する host では PyPI への HTTPS が成功し、Python3.12 用の `pip download --only-binary=:all: 'yt-dlp[default]==2026.8.19' awscli==1.32.0` で依存全体の解決・取得が成功した。版が存在しないことによる失敗ではない。image build の完了には、許可済み proxy / CA を通常の検証付きで利用できる build 環境が必要。取得物は一時ディレクトリのみで app/旧source/本番image に変更を加えていない。
 
-CDK は基盤導入 commit `be3a2f1` から scaffold と説明され、`infra/bin/app.ts` の stack 名は `YoutubeBackupFrontV2`。workflow / Make / frontend package から CDK の呼び出しはなく、deploy は Actions Variables の配布先を使用する。実デプロイ・所有の根拠は確認できず、未デプロイとも断定しない。
+CDK は基盤導入 commit `be3a2f1` から scaffold と説明され、`infra/bin/app.ts` の stack 名は `YoutubeBackupFrontV2`。workflow / Make / frontend package から CDK の呼び出しはなく、deploy は Actions Variables の配布先を使用する。実デプロイ・所有の根拠は確認できず、未デプロイとも断定しない。既存 main の [最新 deploy run](https://github.com/hiroki1117/youtube-backup-front-v2/actions/runs/36311709384) は移動前 commit `721ed65` の実行で `Configure AWS credentials (OIDC)` が失敗。直近5 runも失敗しており、本変更を本番配布成功の根拠にはしない。
 
 既存環境認証（`terraform_for_codex`）で STS identity は成功したが、Lambda `ListFunctions`、CloudFormation `ListStacks` と指定 stack の `DescribeStackResources` は AccessDenied。GitHub Actions Variables の取得も integration 権限で HTTP403。秘密値を返す Lambda configuration API は使用せず、追加 credential / AssumeRole / 権限拡張も行っていない。このため live Lambda source/hash・CDK所有・実配布先の照合は未完了。
 

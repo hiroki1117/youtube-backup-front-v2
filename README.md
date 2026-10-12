@@ -1,56 +1,70 @@
-# YouTube Backup — アプリ統合の初期整備
+# YouTube Backup
 
+frontend・backend（Lambda）・batch を1つの repo で変更・検証し、各部分の独立した build / deploy を維持するための初期整備。
 現在の repo 名は `youtube-backup-front-v2`。将来 `youtube-backup-v2` へ改名する。
-[統合 Issue #41](https://github.com/hiroki1117/projects/issues/41) の準備段階であり、本番の切替は未完了。
-Nx 等は追加せず、各ディレクトリの標準ツールと Make で開発・検証する。
+[Issue #41](https://github.com/hiroki1117/projects/issues/41) の移行途中で、本番のコード一致・配布切替は未完了。
 
-| ディレクトリ      | 内容・状態                                                                    |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `frontend/`       | 既存 Vite / React / TypeScript / pnpm アプリ。コードは移動のみ                |
-| `backend/lambda/` | 旧 `youtube-backup` の Python Lambda 9件。live 未照合の移管ソース             |
-| `batch/scripts/`  | 同 repo の download / upload / whisper / 保守スクリプト。配布は旧 repo が継続 |
-| `infra/`          | 既存 CDK scaffold を保全。所有確認前に適用・削除しない                        |
+| 配置                               | 役割と現在の配布元                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [frontend/](frontend/)             | Vite / React / TypeScript アプリ。既存の [deploy.yml](.github/workflows/deploy.yml) が S3 / CloudFront へ配布 |
+| [backend/lambda/](backend/lambda/) | 旧 `youtube-backup` の Lambda ソースを保全。本番と未照合、配布は旧管理のまま                                  |
+| [batch/scripts/](batch/scripts/)   | download / upload / whisper / 保守スクリプトを保全。image push は旧 `youtube-backup` の CI が継続             |
+| [infra/](infra/)                   | 既存 CDK scaffold。実所有の確認前に適用・削除しない                                                           |
 
-`youtube_backup2` はインフラ用でアプリの移管元ではない。`youtube-backup-front` は旧 CRA 実装で、今回取り込まない。
-移管元 SHA・ファイル SHA256 は [source-manifest.json](docs/source-manifest.json)、境界と移行手順は [migration.md](docs/migration.md) を参照。
+AWS 定義・state の管理先は [hiroki1117/infra](https://github.com/hiroki1117/infra)。
+app は source と成果物作成、infra は AWS 設定と成果物参照を担当する。Lambda code 更新の唯一の所有者は切替前に確定する。
+`youtube_backup2` はインフラ用、`youtube-backup-front` は旧 CRA 実装で、今回のアプリ移管元ではない。
+出所は [source-manifest.json](docs/source-manifest.json)、境界・制約・切替条件は [migration.md](docs/migration.md) を参照。
 
-## 開発・検証
+## セットアップと起動
 
-Node.js 20 以上、`pnpm@10.34.5`（`frontend/package.json`）、Python 3、Make、shell を使用する。
-Docker は batch のローカル image build にのみ必要。
+Node / pnpm の要件・固定版と全コマンドは [frontend/package.json](frontend/package.json)、検証する Node は [CI](.github/workflows/ci.yml) を参照。
+Python 3、Make、shell も使用する。Docker は batch image のローカル build に必要。
+pnpm を用意した後、repo 直下で実行する（専用モノレポ framework は使用しない）。
 
 ```bash
-corepack enable
 make install
-cp frontend/.env.example frontend/.env # 公開 VITE_* 構成値を設定
+cp frontend/.env.example frontend/.env # 公開構成値を設定
 pnpm --dir frontend dev
-make check # frontend 型・lint・format・既存テスト、backend/batch 構文
+```
+
+環境変数の説明は [frontend/.env.example](frontend/.env.example)。`.env` は frontend 内から読み込む。
+`VITE_*` はブラウザへ公開されるため秘密値を入れない。
+開発サーバーの起動と HTTP 応答はダミー構成値で確認済み。本番認証・API 疎通は未確認。
+
+## 検証・build
+
+repo 全体の検証と frontend の成果物作成:
+
+```bash
+make check # frontend 型・lint・format・coverage、backend/batch 構文
 make build # frontend と Storybook
 ```
 
-各部分を独立に実行できる:
+各部分も独立して実行できる:
 
 ```bash
 pnpm --dir frontend typecheck
 pnpm --dir frontend test
 pnpm --dir frontend build
 make -C backend check
-make -C backend package # build/candidates のソースのみ ZIP。配布禁止・依存未同梱
+make -C backend package # ソースのみの候補 ZIP。依存未同梱・本番配布禁止
 make -C batch check
 make -C batch build IMAGE=yt-dlp-script TAG=youtube-backup-candidate:local
 ```
 
-frontend のレイヤは `components → hooks → api → types`。
-Storybook は `pnpm --dir frontend storybook`。`.env` は frontend 内から読み込む。
-`VITE_API_BASE_URL`、`VITE_COGNITO_USER_POOL_ID`、`VITE_COGNITO_CLIENT_ID`、`VITE_COGNITO_REGION` はクライアント公開値。
+frontend の既存テスト・型・lint・format、Vite / Storybook build、backend / batch の構文と候補 ZIP は確認済み。
+batch image build と AWS 上の機能検証は未完了。詳細な検証結果と環境制約は [migration.md](docs/migration.md)。
+frontend の機能・画面は [src/app/](frontend/src/app/)、API境界は [src/api/](frontend/src/api/)、ドメイン型は [src/types/](frontend/src/types/) が入口。
+レイヤは `components → hooks → api → types`。Storybook は `pnpm --dir frontend storybook`、設定は [.storybook/](frontend/.storybook/)。
 
-## CI・配布
+## 配布と残る制約
 
-既存 CI は frontend の型・lint・format・coverage（line 80%）・build・Storybook を継続し、backend/batch の非実行構文検査を加える。
-既存 `deploy.yml` の main push / 手動実行、production environment、OIDC、S3/CloudFront 配布先を維持し、実行ディレクトリを frontend に変更した。
-本番成果物は `frontend/dist/` のみ。Storybook / candidate ZIP / batch は配布しない。
-既存 workflow の停止・起動や Actions 設定変更は実施していない。
+既存 frontend deploy の trigger・production environment・OIDC を維持し、実行パスを frontend に変更した。
+配布対象は `frontend/dist/` のみ。既存 main の最新 deploy は OIDC credential 設定で失敗しており、実配布先の確認も権限不足で未完了。
+main merge は既存 deploy を起動するため、配布設定の確認と別承認が必要。
 
-backend/batch の新しい本番 workflow は作成しない。旧 image CI が SHA / `latest` を push する間、この repo から同じ ECR へ push しない。
-AWS 定義・state は `hiroki1117/infra` の責務。Lambda/Batch の配布切替、repo 改名、OIDC/外部連携の変更は別の承認段階。
-Lambdalith 化・runtime 更新・依存変更・image digest 固定化は今回と分ける。
+backend / batch の新しい本番 workflow は追加していない。旧 CI が image の SHA / `latest` を push し、infra が `latest` を参照する間、同じ ECR へ二重配布しない。
+Lambda live source / runtime / layer の照合、配布所有者・旧CI切替、CDK所有、改名時の OIDC / 外部連携整合が残る。
+repo 改名・PR / merge・deploy・AWS / state / IAM / secret 変更・既存CI停止/起動は今回実施していない。
+Lambdalith 化、runtime / 依存更新、image digest 固定化は別段階。
